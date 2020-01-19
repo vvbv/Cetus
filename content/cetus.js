@@ -304,7 +304,7 @@ class Cetus {
 // TODO Move speedhack stuff
 class SpeedHack {
     constructor(multiplier) {
-        this.multiplier = multiplier;
+        this.multiplier = multiplier + 10;
 
         this.oldDn = Date.now;
         this.oldPn = performance.now;
