@@ -231,7 +231,7 @@ class Cetus {
     }
 
     setSpeedhackMultiplier(multiplier) {
-        if (bigintIsNaN(multiplier)) {
+        if (isNaN(multiplier)) {
             return;
         }
 
@@ -265,7 +265,7 @@ class Cetus {
             this._resolveFunctions();
         }
 
-        if (!bigintIsNaN(funcIndex) && typeof this._functions[funcIndex] === "object") {
+        if (!isNaN(funcIndex) && typeof this._functions[funcIndex] === "object") {
             return this._functions[funcIndex];
         }
     }
@@ -304,7 +304,7 @@ class Cetus {
 // TODO Move speedhack stuff
 class SpeedHack {
     constructor(multiplier) {
-        this.multiplier = multiplier + 10;
+        this.multiplier = multiplier;
 
         this.oldDn = Date.now;
         this.oldPn = performance.now;
@@ -346,6 +346,61 @@ const colorLog = function(msg) {
         "color: #ff2424; background: #fff; padding:5px 0;");
 };
 
+const isValidMemType = function(memType) {
+    switch (memType) {
+        case "i8":
+        case "i16":
+        case "i32":
+        case "f32":
+        case "i64":
+        case "f64":
+            return true;
+        default:
+            return false;
+    }
+};
+
+const indexToRealAddress = function(memIndex, memType) {
+    const memSize = getElementSize(memType);
+
+    return memIndex * memSize;
+};
+
+const realAddressToIndex = function(memAddr, memType) {
+    const memSize = getElementSize(memType);
+
+    return Math.floor(memAddr / memSize);
+};
+
+const getElementSize = function(type) {
+    let indexSize;
+
+    switch (type) {
+        case "i8":
+            indexSize = 1;
+            break;
+        case "i16":
+            indexSize = 2;
+            break;
+        case "i32":
+            indexSize = 4;
+            break;
+        case "i64":
+            indexSize = 8;
+            break;
+        case "f32":
+            indexSize = 4;
+            break;
+        case "f64":
+            indexSize = 8;
+            break;
+        default:
+            throw new Error("Invalid memory type " + type + " in getElementSize()");
+    }
+
+    return indexSize;
+};
+
 // Event will be captured by content.js and passed along to the extension
 const sendExtensionMessage = function(type, msg) {
     const msgBody = {
@@ -353,7 +408,7 @@ const sendExtensionMessage = function(type, msg) {
         body: msg
     };
 
-    const evt = new CustomEvent("cetusMsgIn", { detail: bigintJsonStringify(msgBody) } );
+    const evt = new CustomEvent("cetusMsgIn", { detail: JSON.stringify(msgBody) } );
 
     window.dispatchEvent(evt);
 };
@@ -364,7 +419,7 @@ window.addEventListener("cetusMsgOut", function(msgRaw) {
         return;
     }
 
-    const msg = bigintJsonParse(msgRaw.detail);
+    const msg = JSON.parse(msgRaw.detail);
 
     const msgType = msg.type;
     const msgBody = msg.body;
@@ -443,7 +498,7 @@ window.addEventListener("cetusMsgOut", function(msgRaw) {
             const modifyValue = msgBody.memValue;
             const modifyMemType = msgBody.memType;
 
-            if (bigintIsNaN(modifyIndex) || bigintIsNaN(modifyValue) || !isValidMemType(modifyMemType)) {
+            if (isNaN(modifyIndex) || isNaN(modifyValue) || !isValidMemType(modifyMemType)) {
                 return;
             }
 
@@ -461,11 +516,11 @@ window.addEventListener("cetusMsgOut", function(msgRaw) {
             const watchSize = msgBody.size;
             const watchFlags = msgBody.flags;
 
-            if (bigintIsNaN(watchIndex) ||
-                bigintIsNaN(watchAddr) ||
-                bigintIsNaN(watchValue) ||
-                bigintIsNaN(watchSize) ||
-                bigintIsNaN(watchFlags)) {
+            if (isNaN(watchIndex) ||
+                isNaN(watchAddr) ||
+                isNaN(watchValue) ||
+                isNaN(watchSize) ||
+                isNaN(watchFlags)) {
                 return;
             }
 
@@ -494,7 +549,7 @@ window.addEventListener("cetusMsgOut", function(msgRaw) {
         case "shEnable":
             const shMultiplier = msgBody.multiplier;
 
-            if (bigintIsNaN(shMultiplier)) {
+            if (isNaN(shMultiplier)) {
                 return;
             }
 

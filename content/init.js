@@ -31,6 +31,8 @@ window.onbeforeunload = function() {
 const instrumentBinary = function(bufferSource) {
     const wail = new WailParser();
 
+    colorLog("WebAssembly.instantiate() intercepted");
+
     const funcTypeWatchCallback = wail.addTypeEntry({
         form: "func",
         params: [],
@@ -456,8 +458,6 @@ const stacktraceCallback = function(stackFrames) {
 const oldWebAssemblyInstantiate = WebAssembly.instantiate;
 
 const webAssemblyInstantiateHook = function(bufferSource, importObject) {
-    colorLog("WebAssembly.instantiate() intercepted");
-
     const instrumentResults = instrumentBinary(bufferSource);
 
     const instrumentedBuffer = instrumentResults.buffer;
@@ -494,14 +494,8 @@ const webAssemblyModuleHook = function(bufferSource) {
 
     const instrumentResults = instrumentBinary(bufferSource);
 
-    const instrumentedBuffer = instrumentResults.buffer;
-    const instrumentedSymbols = instrumentResults.symbols;
-
-    cetus = new Cetus({
-        watchpointExports: [instanceObject.instance.exports.addWatch],
-        buffer: instrumentedBuffer,
-        symbols: instrumentedSymbols
-    });
+    instrumentedBuffer = instrumentResults.buffer;
+    instrumentedSymbols = instrumentResults.symbols;
 
     return oldWebAssemblyModule(instrumentedBuffer);
 };
@@ -513,11 +507,6 @@ const oldWebAssemblyInstance = WebAssembly.Instance;
 const webAssemblyInstanceHook = function(module, importObject) {
     colorLog("WebAssembly.Instance() intercepted");
 
-    const instrumentResults = instrumentBinary(bufferSource);
-
-    const instrumentedBuffer = instrumentResults.buffer;
-    const instrumentedSymbols = instrumentResults.symbols;
-
     const importMemory = importObject.env.memory;
 
     importObject.env.readWatchCallback = readWatchCallback;
@@ -525,9 +514,8 @@ const webAssemblyInstanceHook = function(module, importObject) {
 
     cetus = new Cetus({
         memory: importMemory,
-        watchpointExports: [instanceObject.instance.exports.addWatch],
         buffer: instrumentedBuffer,
-        symbols: instrumentedSymbols
+        addWatch: instanceObject.instance.exports.addWatch
     });
 
     return oldWebAssemblyInstance(instrumentedBuffer, importObject);
@@ -549,17 +537,13 @@ const webAssemblyInstantiateStreamingHook = function(bufferSource, importObject)
 
     return new Promise(function(resolve, reject) {
         bufferSource.then((res) => res.arrayBuffer()).then((bufferSource) => {
-            const instrumentResults = instrumentBinary(bufferSource);
-
-            const instrumentedBuffer = instrumentResults.buffer;
-            const instrumentedSymbols = instrumentResults.symbols;
+            const instrumentedBuffer = instrumentBinary(bufferSource);
 
             oldWebAssemblyInstantiate(instrumentedBuffer, importObject).then(function(instanceObject) {
                 cetus = new Cetus({
                     memory: importMemory,
-                    watchpointExports: [instanceObject.instance.exports.addWatch],
                     buffer: instrumentedBuffer,
-                    symbols: instrumentedSymbols
+                    addWatch: instanceObject.instance.exports.addWatch
                 });
 
                 resolve(instanceObject);

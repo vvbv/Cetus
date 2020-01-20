@@ -101,9 +101,7 @@ class BackgroundExtension {
 
             // TODO Actually handle port closed error
             try {
-                const msgStr = bigintJsonStringify(msg);
-
-                this._popupChannel.postMessage(msgStr);
+                this._popupChannel.postMessage(msg);
             }
             catch (err) {
                 return;
@@ -113,9 +111,7 @@ class BackgroundExtension {
 
     passthruPopupMessage(msg) {
         if (this._popupChannel !== null) {
-            const msgStr = bigintJsonStringify(msg);
-
-            this._popupChannel.postMessage(msgStr);
+            this._popupChannel.postMessage(msg);
         }
     }
 
@@ -352,7 +348,7 @@ const popupMessageListener = function(msg) {
         case "removeBookmark":
             const removeMemAddr = msgBody.memAddr;
 
-            if (bigintIsNaN(removeMemAddr)) {
+            if (isNaN(removeMemAddr)) {
                 return;
             }
 
@@ -406,7 +402,7 @@ const popupMessageListener = function(msg) {
             const funcIndex = msgBody.index;
             const lineNum = msgBody.lineNum;
 
-            if (typeof funcIndex !== "string" || bigintIsNaN(funcIndex) || funcIndex === "") {
+            if (typeof funcIndex !== "string" || isNaN(funcIndex) || funcIndex === "") {
                 return;
             }
 
@@ -458,11 +454,7 @@ bgExtension = new BackgroundExtension();
 
 // This listener receives commands directly from the page
 // As such, all inputs should be treated as untrusted
-chrome.runtime.onMessage.addListener(function(msgRaw) {
-    const msg = bigintJsonParse(msgRaw);
-
-    console.log(msg);
-
+chrome.runtime.onMessage.addListener(function(msg) {
     const msgType = msg.type;
     const msgBody = msg.body;
 
@@ -535,7 +527,7 @@ chrome.runtime.onMessage.addListener(function(msgRaw) {
 
             // All keys in resultObject should be numeric. If not, toss the whole thing
             for (let entry in resultObject) {
-                if (bigintIsNaN(entry)) {
+                if (isNaN(entry)) {
                     return;
                 }
             }
